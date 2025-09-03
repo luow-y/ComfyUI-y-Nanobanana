@@ -3,16 +3,10 @@
 ComfyUI扩展节点，通过NunoBanana的API实现图像生成，提供文生图(Text-to-Image)和图生图(Image-to-Image)功能，内置授权验证系统和多种标准画布尺寸预设
 
 
-
-
-
-
 ui展示
 
 
-
 <img width="1681" height="949" alt="image" src="https://github.com/user-attachments/assets/bc8b80c5-d7c6-4004-a2bb-b3cbcdbf82a0" />
-
 
 
 \## 📞 联系作者
