@@ -16,13 +16,7 @@ ui展示
 
 
 \## 📞 联系作者
-
-
-
-
-
-![1429b639a81a57e10a8bf27f2ff5442](https://github.com/user-attachments/assets/cde90091-3fcb-44f8-81d0-64c2cd30fcfc)
-
+<img width="526" height="823" alt="image" src="https://github.com/user-attachments/assets/f41f24de-55e2-4545-965d-59ce556fa781" />
 
 \## 🎨 功能特点
 \- ✨ \*\*双模式生成\*\*：支持文生图和图生图
@@ -34,8 +28,6 @@ ui展示
 \- ⚡ \*\*智能检测\*\*：自动识别输入类型，优化生成效果
 
 \- 🌐 \*\*稳定连接\*\*：多域名容错，保证服务稳定性
-
-
 
 
 
