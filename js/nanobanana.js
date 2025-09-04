@@ -1,10 +1,10 @@
 import { app } from "/scripts/app.js";
 
 app.registerExtension({
-	name: "NanoBanana.AICG.FinalFixed",
+	name: "NanoBanana.AICG.SplitNodes",
 	async beforeRegisterNodeDef(nodeType, nodeData, app) {
-		// 确保只在我们的目标节点上执行
-		if (nodeData.name === "NanoBananaAICG") {
+		// 支持两个分离的节点
+		if (nodeData.name === "NanoBananaTextToImage" || nodeData.name === "NanoBananaImageToImage") {
 			
 			const onNodeCreated = nodeType.prototype.onNodeCreated;
 			nodeType.prototype.onNodeCreated = function () {
@@ -14,10 +14,20 @@ app.registerExtension({
 				this.queryCooldown = 0;
 				this.cooldownInterval = null;
 
-				// 在"查询次数"按钮前，新增一个"购买次数"的文本字段
-				const purchaseWidget = this.addWidget("text", "购买次数:", "微信：ddwei089", {
-					multiline: false,
+				// 获取节点类型用于显示
+				const nodeTypeName = nodeData.name === "NanoBananaTextToImage" ? "文生图" : "图生图";
+
+				// 创建购买次数按钮（放在右上角）
+				const purchaseButton = this.addWidget("button", "购买次数请点击这里", "purchase", () => {
+					// 点击时跳转到购买页面
+					window.open("https://example.com/purchase", "_blank");
 				});
+
+				// 设置购买按钮的样式（右对齐）
+				if (purchaseButton.element) {
+					purchaseButton.element.style.float = "right";
+					purchaseButton.element.style.marginRight = "10px";
+				}
 
 				// 创建"查询"按钮
 				const queryButton = this.addWidget("button", "查询次数", "query", () => {
@@ -25,13 +35,15 @@ app.registerExtension({
 				});
 
 				// 创建用于显示结果的文本区域
-				const resultWidget = this.addWidget("text", "查询结果:", "点击上方按钮查询授权码状态", { 
+				const resultWidget = this.addWidget("text", `${nodeTypeName}查询结果:`, "点击上方按钮查询授权码状态", { 
                     multiline: true,
                 });
 
 				// 将组件保存到节点实例上，方便后续访问
 				this.queryButton = queryButton;
 				this.resultWidget = resultWidget;
+				this.purchaseButton = purchaseButton;
+				this.nodeTypeName = nodeTypeName; // 保存节点类型名称
 
 				// 启动倒计时显示
 				this.startCooldownDisplay = () => {
@@ -106,7 +118,7 @@ app.registerExtension({
 								statusInfo += `\n有效期: ${data.expire_info}`;
 							}
 
-							this.resultWidget.value = `✅ 查询成功!\n剩余次数: ${data.remaining}${statusInfo}`;
+							this.resultWidget.value = `✅ ${this.nodeTypeName}查询成功!\n剩余次数: ${data.remaining}${statusInfo}`;
 							
 							// 设置30秒冷却时间
 							this.queryCooldown = 30;
@@ -120,7 +132,7 @@ app.registerExtension({
 								this.startCooldownDisplay();
 								this.resultWidget.value = `⏱️ 查询太频繁!\n请等待 ${data.cooldown} 秒后再试`;
 							} else {
-								this.resultWidget.value = `❌ 查询失败!\n原因: ${data.error}`;
+								this.resultWidget.value = `❌ ${this.nodeTypeName}查询失败!\n原因: ${data.error}`;
 								// 即使失败也设置冷却时间，防止频繁请求
 								this.queryCooldown = 10;
 								this.startCooldownDisplay();
@@ -128,7 +140,7 @@ app.registerExtension({
 						}
 					} catch (error) {
 						console.error("查询请求失败:", error);
-						this.resultWidget.value = `❌ 网络请求失败:\n${error.message}`;
+						this.resultWidget.value = `❌ ${this.nodeTypeName}网络请求失败:\n${error.message}`;
 						
 						// 网络错误也设置短暂冷却时间
 						this.queryCooldown = 5;
@@ -171,14 +183,14 @@ app.registerExtension({
 						// 检查是否生成成功
 						if (statusText.includes('❌') || statusText.includes('⚠️')) {
 							// 生成失败
-							this.resultWidget.value = `❌ 生成失败!\n最新剩余次数: ${newRemaining}\n原因: ${statusText}`;
+							this.resultWidget.value = `❌ ${this.nodeTypeName}生成失败!\n最新剩余次数: ${newRemaining}\n原因: ${statusText}`;
 						} else {
 							// 生成成功
-							this.resultWidget.value = `✅ 生成成功!\n最新剩余次数: ${newRemaining}`;
+							this.resultWidget.value = `✅ ${this.nodeTypeName}生成成功!\n最新剩余次数: ${newRemaining}`;
 						}
 					} else {
 						// 没有剩余次数信息，可能是错误消息
-						this.resultWidget.value = `ℹ️ 执行结果:\n${statusText}`;
+						this.resultWidget.value = `ℹ️ ${this.nodeTypeName}执行结果:\n${statusText}`;
 					}
 				}
 			};
