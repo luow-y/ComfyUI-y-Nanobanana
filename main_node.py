@@ -92,26 +92,29 @@ class ImageCache:
 # 创建全局缓存实例
 image_cache = ImageCache()
 
-# 简单配置类
+
 class SimpleConfig:
-    MAIN_DOMAIN_B64 = "aHR0cHM6Ly9hYTExLnNtZWFscmVpYnNvbWVqdTg0LndvcmtlcnMuZGV2"
-    BACKUP_DOMAIN_B64 = "aHR0cHM6Ly9mYW5jeS1wb25kLTEyYTAuc21lYWxyZWlic29tZWp1ODQud29ya2Vycy5kZXY="
+    MAIN_DOMAIN_B64 = "aHR0cHM6Ly9mZmZnLnF3ZXJhczAxLnNpdGUv"
+    # 备用域名 - 请替换成您的实际备用域名
+    BACKUP_DOMAIN_B64 = "aHR0cHM6Ly9iYWNrdXAueW91ci1kb21haW4uY29tLw=="  # 示例: https://backup.your-domain.com/
     
     @staticmethod
     def get_api_url(endpoint_type):
-        """获取API URL - 简单可靠"""
+        """获取API URL"""
         
-        # 解码主域名
         try:
-            main_domain = base64.b64decode(SimpleConfig.MAIN_DOMAIN_B64).decode('utf-8')
-        except:
-            main_domain = "https://your-domain.workers.dev"  # 默认值
+            main_domain = base64.b64decode(SimpleConfig.MAIN_DOMAIN_B64).decode('utf-8').strip()
+            if not main_domain.endswith('/'):
+                main_domain += '/'
+        except Exception as e:
+            print(f"[错误] 主域名解码失败: {e}")
+            return None  # 不提供默认值，避免意外连接
         
         # 构建完整URL
         if endpoint_type == "use":
-            return f"{main_domain}/public-api/auth-codes/use"
+            return f"{main_domain}public-api/auth-codes/use"
         elif endpoint_type == "query":
-            return f"{main_domain}/public-api/auth-codes/query"
+            return f"{main_domain}public-api/auth-codes/query"
         else:
             return None
     
@@ -119,20 +122,24 @@ class SimpleConfig:
     def get_backup_url(endpoint_type):
         """获取备用URL"""
         try:
-            backup_domain = base64.b64decode(SimpleConfig.BACKUP_DOMAIN_B64).decode('utf-8')
-        except:
-            backup_domain = "https://fancy-pond-12a0.smealsomeju84.workers.dev"  # 默认备用
+            backup_domain = base64.b64decode(SimpleConfig.BACKUP_DOMAIN_B64).decode('utf-8').strip()
+            if not backup_domain.endswith('/'):
+                backup_domain += '/'
+            print(f"[配置] 使用备用域名: {backup_domain}")
+        except Exception as e:
+            print(f"[错误] 备用域名解码失败: {e}")
+            return None  # 不提供默认值
         
         if endpoint_type == "use":
-            return f"{backup_domain}/public-api/auth-codes/use"
+            return f"{backup_domain}public-api/auth-codes/use"
         elif endpoint_type == "query":
-            return f"{backup_domain}/public-api/auth-codes/query"
+            return f"{backup_domain}public-api/auth-codes/query"
         else:
             return None
 
-# 简单API客户端
+# 简化的API客户端
 class SimpleAPIClient:
-    """简单的API客户端 - 无复杂重试"""
+    """纯自定义域名API客户端"""
     
     def __init__(self):
         self.session = requests.Session()
@@ -143,40 +150,46 @@ class SimpleAPIClient:
         })
     
     def make_request(self, endpoint_type, data):
-        """发起API请求 - 最多2次尝试"""
+        """发起API请求 - 只使用配置的自定义域名"""
         
         # 尝试主域名
         main_url = SimpleConfig.get_api_url(endpoint_type)
         if main_url:
             try:
-                print(f"[API] 请求主域名...")
                 response = self.session.post(main_url, json=data, timeout=10)
                 if response.status_code == 200:
                     result = response.json()
                     if result.get('success'):
-                        print("[API] 主域名成功")
+                        print("[API] 主域名请求成功")
                         return result
                     else:
-                        print(f"[API] 业务错误: {result.get('error')}")
+                        print(f"[API] 主域名业务错误: {result.get('error')}")
                         return result
+                else:
+                    print(f"[API] 主域名HTTP错误: {response.status_code}")
             except Exception as e:
-                print("[API] 主域名失败")
+                print(f"[API] 主域名连接失败: {e}")
         
         # 尝试备用域名
         backup_url = SimpleConfig.get_backup_url(endpoint_type)
         if backup_url:
             try:
-                print(f"[API] 请求备用域名...")
                 response = self.session.post(backup_url, json=data, timeout=10)
                 if response.status_code == 200:
                     result = response.json()
-                    print("[API] 备用域名成功")
-                    return result
+                    if result.get('success'):
+                        print("[API] 备用域名请求成功")
+                        return result
+                    else:
+                        print(f"[API] 备用域名业务错误: {result.get('error')}")
+                        return result
+                else:
+                    print(f"[API] 备用域名HTTP错误: {response.status_code}")
             except Exception as e:
-                print("[API] 备用域名失败")
+                print(f"[API] 备用域名连接失败: {e}")
         
-        return {"success": False, "error": "所有域名都无法访问"}
-
+        print("[API] 所有配置的域名均无法访问")
+        return {"success": False, "error": "配置的域名均无法访问"}
 # 授权验证函数
 def verify_auth_code(auth_code):
     """验证授权码"""
